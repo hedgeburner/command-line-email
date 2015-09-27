@@ -3,11 +3,9 @@
 
 import sys, os
 import argparse, smtplib
-import hashlib, shelve, getpass
+import shelve, getpass
 import email
 from email import policy
-
-import Crypto.Cipher as cipher
 
 class User:
     """
