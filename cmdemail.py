@@ -22,11 +22,12 @@ class User:
     def load_user(cls, command_args, datafile='userdata'):
         """load a user from the prepared command line args and the database."""
         user = command_args.pop('user')
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), datafile)
         try:
-            with shelve.open(datafile) as file:
+            with shelve.open(filename) as file:
                 command_args.update(file[user])
         except KeyError:
-            new = create_new_user(user, datafile)
+            new = create_new_user(user, filename)
             command_args.update(new)
         if command_args['subject'] is None:
             command_args['subject'] = command_args['default_subject']
@@ -43,9 +44,9 @@ def get_user():
     """
     return getpass.getuser()
     
-def create_new_user(username, datafile):
+def create_new_user(username, filename):
     """create a new user, store it in datafile. return user data as dict."""
-    print('Hello, you are new to this program.')
+    print('Hello {}, you are new to this program.'.format(username))
     address = input("Your Email address: ")
     smtp = input('Address of your smtp server: ')
     subject = input("If you don't type in a subject line, what should be used as a default? ")
@@ -53,7 +54,7 @@ def create_new_user(username, datafile):
             'host': smtp,
             'default_subject': subject}
     print("saving your data...")
-    with shelve.open(datafile) as file:
+    with shelve.open(filename) as file:
         file[username] = data
     return data
         
@@ -68,6 +69,12 @@ def send(msg, user):
     msg['To'] = user.address
     
     with smtplib.SMTP(user.host) as smtp:
+        try:
+            smtp.starttls()
+        except smtplib.SMTPException:
+            answer = input("The server does not support encryption. Proceed anyway? ")
+            if answer.lower() not in ('yes', 'y', 'j', 'ja'):
+                sys.exit(0)
         smtp.login(user.email, user.password)
         smtp.send_message(msg)
         
